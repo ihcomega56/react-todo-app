@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const initialTodos = [
+const initialTodos = JSON.parse(localStorage.getItem('todos')) || [
   { id: 1, text: 'Learn React', status: '未着手' },
   { id: 2, text: 'Build a ToDo App', status: '実施中' },
   { id: 3, text: 'Present the App', status: '完了' }
@@ -12,7 +12,15 @@ const statuses = ['未着手', '実施中', '完了'];
 function App() {
   const [todos, setTodos] = useState(initialTodos);
   const [newTodo, setNewTodo] = useState('');
-  const [archivedTodos, setArchivedTodos] = useState([]);
+  const [archivedTodos, setArchivedTodos] = useState(JSON.parse(localStorage.getItem('archivedTodos')) || []);
+
+  useEffect(() => {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }, [todos]);
+
+  useEffect(() => {
+    localStorage.setItem('archivedTodos', JSON.stringify(archivedTodos));
+  }, [archivedTodos]);
 
   const onDragStart = (e, id) => {
     e.dataTransfer.setData('id', id);
