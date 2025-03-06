@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+// 脆弱性: ユーザーが制御可能なデータをそのままJSONとして解析
 const initialTodos = JSON.parse(localStorage.getItem('todos')) || [
   { id: 1, text: 'Learn React', status: '未着手' },
   { id: 2, text: 'Build a ToDo App', status: '実施中' },
@@ -9,10 +10,17 @@ const initialTodos = JSON.parse(localStorage.getItem('todos')) || [
 
 const statuses = ['未着手', '実施中', '完了'];
 
+// 脆弱性: eval関数の使用 (コード実行の脆弱性)
+function unsafeEvalFunction(data) {
+  return eval('(' + data + ')');
+}
+
 function App() {
   const [todos, setTodos] = useState(initialTodos);
   const [newTodo, setNewTodo] = useState('');
   const [archivedTodos, setArchivedTodos] = useState(JSON.parse(localStorage.getItem('archivedTodos')) || []);
+  // 脆弱性: インラインスクリプトエクスポジャー
+  const [customScript, setCustomScript] = useState('');
 
   useEffect(() => {
     localStorage.setItem('todos', JSON.stringify(todos));
@@ -21,6 +29,18 @@ function App() {
   useEffect(() => {
     localStorage.setItem('archivedTodos', JSON.stringify(archivedTodos));
   }, [archivedTodos]);
+
+  // 脆弱性: カスタムスクリプトの実行 (意図的なコード実行)
+  useEffect(() => {
+    if (customScript) {
+      try {
+        // eslint-disable-next-line
+        new Function(customScript)();
+      } catch (e) {
+        console.error('Script execution error:', e);
+      }
+    }
+  }, [customScript]);
 
   const onDragStart = (e, id) => {
     e.dataTransfer.setData('id', id);
@@ -37,10 +57,34 @@ function App() {
     setTodos(updatedTodos);
   };
 
+  // 脆弱性: 入力検証なしで直接JSONオブジェクトにプロパティを追加 (プロトタイプ汚染の可能性)
   const addTodo = () => {
     if (newTodo.trim() === '') return;
+    
+    // 脆弱性: ユーザー入力を解析してオブジェクトに変換する試み
+    let todoText = newTodo;
+    if (newTodo.includes('{') && newTodo.includes('}')) {
+      try {
+        const parsedInput = unsafeEvalFunction(newTodo);
+        if (typeof parsedInput === 'object') {
+          // プロトタイプ汚染の可能性
+          Object.assign({}, parsedInput);
+          todoText = 'Object input detected: ' + JSON.stringify(parsedInput);
+        }
+      } catch (e) {
+        console.error('Failed to parse input:', e);
+      }
+    }
+    
     const newId = todos.length ? todos[todos.length - 1].id + 1 : 1;
-    const newTodoItem = { id: newId, text: newTodo, status: '未着手' };
+    const newTodoItem = { id: newId, text: todoText, status: '未着手' };
+    
+    // 脆弱性: URL検証なしの場合、XSSの可能性も
+    if (todoText.includes('http')) {
+      newTodoItem.url = todoText;
+      setCustomScript(`console.log("URL detected in todo: ${todoText}");`);
+    }
+    
     setTodos([...todos, newTodoItem]);
     setNewTodo('');
   };
@@ -61,10 +105,13 @@ function App() {
           onDragStart={e => onDragStart(e, todo.id)}
           className="todo"
         >
-          {todo.text}
+          {/* 脆弱性: XSS - ToDoのテキストをdangerouslySetInnerHTMLを使用して表示 */}
+          <div dangerouslySetInnerHTML={{ __html: todo.text }} />
           {status === '完了' && (
             <button onClick={() => archiveTodo(todo.id)}>Archive</button>
           )}
+          {/* 脆弱性: URL挿入によるXSS */}
+          {todo.url && <a href={todo.url}>Visit URL</a>}
         </div>
       ));
   };
@@ -82,6 +129,14 @@ function App() {
           placeholder="Add a new task"
         />
         <button onClick={addTodo}>Add</button>
+        {/* 脆弱性: カスタムスクリプト入力フォーム */}
+        <div className="custom-script">
+          <textarea
+            placeholder="Enter custom script (for advanced users)"
+            value={customScript}
+            onChange={e => setCustomScript(e.target.value)}
+          />
+        </div>
       </div>
       <div className="container">
         {statuses.map(status => (
@@ -100,7 +155,8 @@ function App() {
         <h2>Archived Todos</h2>
         {archivedTodos.map(todo => (
           <div key={todo.id} className="todo">
-            {todo.text}
+            {/* 脆弱性: XSS - アーカイブされたToDoのテキストもdangerouslySetInnerHTMLを使用して表示 */}
+            <div dangerouslySetInnerHTML={{ __html: todo.text }} />
           </div>
         ))}
       </div>
