@@ -103,3 +103,18 @@
 .add-todo button:hover {
   background-color: #21a1f1;
 }
+
+.delete-button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  background-color: #dc3545;
+  color: white;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+}
