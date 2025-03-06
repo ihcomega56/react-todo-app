@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import _ from 'lodash';
 import './App.css';
 
 const initialTodos = JSON.parse(localStorage.getItem('todos')) || [
-  { id: 1, text: 'Learn React', status: '未着手' },
-  { id: 2, text: 'Build a ToDo App', status: '実施中' },
-  { id: 3, text: 'Present the App', status: '完了' }
+  { id: 1, text: 'Learn React', status: '未着手', tags: ['frontend', 'learning'] },
+  { id: 2, text: 'Build a ToDo App', status: '実施中', tags: ['project', 'frontend'] },
+  { id: 3, text: 'Present the App', status: '完了', tags: ['presentation'] }
 ];
 
 const statuses = ['未着手', '実施中', '完了'];
+const availableTags = ['frontend', 'backend', 'learning', 'project', 'presentation', 'urgent'];
 
 function App() {
   const [todos, setTodos] = useState(initialTodos);
   const [newTodo, setNewTodo] = useState('');
   const [archivedTodos, setArchivedTodos] = useState(JSON.parse(localStorage.getItem('archivedTodos')) || []);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [filterTag, setFilterTag] = useState('');
 
   useEffect(() => {
     localStorage.setItem('todos', JSON.stringify(todos));
@@ -40,9 +44,15 @@ function App() {
   const addTodo = () => {
     if (newTodo.trim() === '') return;
     const newId = todos.length ? todos[todos.length - 1].id + 1 : 1;
-    const newTodoItem = { id: newId, text: newTodo, status: '未着手' };
+    const newTodoItem = { 
+      id: newId, 
+      text: newTodo, 
+      status: '未着手',
+      tags: selectedTags 
+    };
     setTodos([...todos, newTodoItem]);
     setNewTodo('');
+    setSelectedTags([]);
   };
 
   const archiveTodo = id => {
@@ -51,8 +61,23 @@ function App() {
     setTodos(todos.filter(todo => todo.id !== id));
   };
 
+  const toggleTag = (tag) => {
+    // _.contains()を使用してタグが既に選択されているか確認
+    if (_.contains(selectedTags, tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const filterTodos = (todos) => {
+    if (!filterTag) return todos;
+    // _.contains()を使用してフィルタリング
+    return todos.filter(todo => todo.tags && _.contains(todo.tags, filterTag));
+  };
+
   const renderTodos = status => {
-    return todos
+    return filterTodos(todos)
       .filter(todo => todo.status === status)
       .map(todo => (
         <div
@@ -61,7 +86,12 @@ function App() {
           onDragStart={e => onDragStart(e, todo.id)}
           className="todo"
         >
-          {todo.text}
+          <div>{todo.text}</div>
+          <div className="todo-tags">
+            {todo.tags && todo.tags.map(tag => (
+              <span key={tag} className="tag">{tag}</span>
+            ))}
+          </div>
           {status === '完了' && (
             <button onClick={() => archiveTodo(todo.id)}>Archive</button>
           )}
@@ -74,6 +104,20 @@ function App() {
       <header className="App-header">
         <h1>ToDo App</h1>
       </header>
+      
+      <div className="filter-section">
+        <label>Filter by tag: </label>
+        <select 
+          value={filterTag} 
+          onChange={e => setFilterTag(e.target.value)}
+        >
+          <option value="">All tags</option>
+          {availableTags.map(tag => (
+            <option key={tag} value={tag}>{tag}</option>
+          ))}
+        </select>
+      </div>
+      
       <div className="add-todo">
         <input
           type="text"
@@ -81,8 +125,20 @@ function App() {
           onChange={e => setNewTodo(e.target.value)}
           placeholder="Add a new task"
         />
+        <div className="tag-selector">
+          {availableTags.map(tag => (
+            <span 
+              key={tag} 
+              className={`tag-option ${_.contains(selectedTags, tag) ? 'selected' : ''}`}
+              onClick={() => toggleTag(tag)}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
         <button onClick={addTodo}>Add</button>
       </div>
+      
       <div className="container">
         {statuses.map(status => (
           <div
@@ -96,11 +152,19 @@ function App() {
           </div>
         ))}
       </div>
+      
       <div className="archived-todos">
         <h2>Archived Todos</h2>
         {archivedTodos.map(todo => (
           <div key={todo.id} className="todo">
-            {todo.text}
+            <div>{todo.text}</div>
+            {todo.tags && (
+              <div className="todo-tags">
+                {todo.tags.map(tag => (
+                  <span key={tag} className="tag">{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
