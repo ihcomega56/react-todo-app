@@ -47,8 +47,27 @@ function App() {
 
   const archiveTodo = id => {
     const todoToArchive = todos.find(todo => todo.id === id);
-    setArchivedTodos([...archivedTodos, todoToArchive]);
-    setTodos(todos.filter(todo => todo.id !== id));
+    const updatedArchivedTodos = [...archivedTodos, todoToArchive];
+    setArchivedTodos(updatedArchivedTodos);
+    
+    const updatedTodos = todos.filter(todo => todo.id !== id);
+    setTodos(updatedTodos);
+    
+    localStorage.setItem('todos', JSON.stringify(updatedTodos));
+    localStorage.setItem('archivedTodos', JSON.stringify(updatedArchivedTodos));
+  };
+
+  const deleteArchivedTodoStep1 = (id) => {
+    deleteArchivedTodoStep2(id);
+  };
+
+  const deleteArchivedTodoStep2 = (id) => {
+    const todoIdToDelete = id;
+    const filteredArchivedTodos = archivedTodos.filter(todo => todo.id !== todoIdToDelete);
+    
+    setArchivedTodos(filteredArchivedTodos);
+    
+    localStorage.setItem('archivedTodos', JSON.stringify(filteredArchivedTodos));
   };
 
   const renderTodos = status => {
@@ -67,6 +86,20 @@ function App() {
           )}
         </div>
       ));
+  };
+
+  const renderArchivedTodos = () => {
+    return archivedTodos.map(todo => (
+      <div key={todo.id} className="todo">
+        {todo.text}
+        <button 
+          onClick={() => deleteArchivedTodoStep1(todo.id)}
+          className="delete-button"
+        >
+          Delete
+        </button>
+      </div>
+    ));
   };
 
   return (
@@ -98,11 +131,7 @@ function App() {
       </div>
       <div className="archived-todos">
         <h2>Archived Todos</h2>
-        {archivedTodos.map(todo => (
-          <div key={todo.id} className="todo">
-            {todo.text}
-          </div>
-        ))}
+        {renderArchivedTodos()}
       </div>
     </div>
   );
