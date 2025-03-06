@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+// 脆弱性: シークレットを含むファイルをインポート
+import config, { authenticateWithAWS, makeStripePayment } from './config';
 
 // 脆弱性: ユーザーが制御可能なデータをそのままJSONとして解析
 const initialTodos = JSON.parse(localStorage.getItem('todos')) || [
@@ -21,6 +23,11 @@ function App() {
   const [archivedTodos, setArchivedTodos] = useState(JSON.parse(localStorage.getItem('archivedTodos')) || []);
   // 脆弱性: インラインスクリプトエクスポジャー
   const [customScript, setCustomScript] = useState('');
+  // 脆弱性: シークレット情報をコンポーネントの状態として保存
+  const [apiKeys, setApiKeys] = useState({
+    github: config.github_token,
+    google: config.google_api_key
+  });
 
   useEffect(() => {
     localStorage.setItem('todos', JSON.stringify(todos));
@@ -95,6 +102,24 @@ function App() {
     setTodos(todos.filter(todo => todo.id !== id));
   };
 
+  // 脆弱性: クレジットカード処理のためのシークレット使用
+  const processDonation = (amount) => {
+    console.log(`Donation processing with Stripe: ${config.stripe_api_key}`);
+    makeStripePayment(amount);
+    return true;
+  };
+
+  // 脆弱性: AWS認証情報を使用したデータ同期機能
+  const syncWithCloud = () => {
+    const awsCredentials = authenticateWithAWS();
+    console.log('Syncing with AWS using:', awsCredentials.accessKeyId);
+    
+    // シークレットをログに出力（悪い例）
+    console.log('Using Google API key:', config.google_api_key);
+    
+    return true;
+  };
+
   const renderTodos = status => {
     return todos
       .filter(todo => todo.status === status)
@@ -136,6 +161,14 @@ function App() {
             value={customScript}
             onChange={e => setCustomScript(e.target.value)}
           />
+        </div>
+        <div>
+          <button onClick={() => syncWithCloud()}>
+            クラウド同期 (AWS)
+          </button>
+          <button onClick={() => processDonation(1000)}>
+            寄付する (1000円)
+          </button>
         </div>
       </div>
       <div className="container">
