@@ -16,6 +16,9 @@ const config = {
   // Azure API Key
   azure_api_key: '8a7b5cde3f2g1h6ij4k5lm7n8o9pqrs0t1u2v3w4x',
   
+  // Azure SQL Password
+  azure_sql_password: 'AzureSql$tR0nG!P@$$w0rd2023',
+
   // Slack Webhook
   slack_webhook: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
   
@@ -61,7 +64,8 @@ export function makeStripePayment(amount) {
 
 // 環境変数として設定すべきシークレット（誤った方法）
 window.ENV = {
-  GITHUB_TOKEN: config.github_token,
+  GITHUB_TOKEN: config.github_app_installation_access_token,
   AZURE_API_KEY: config.azure_api_key,
-  ADMIN_PASSWORD: config.admin_credentials.password
+  ADMIN_PASSWORD: config.admin_credentials.password,
+  AZURE_SQL_PASSWORD: config.azure_sql_password
 };
