@@ -8,7 +8,7 @@ const config = {
   aws_secret_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
   
   // GitHub
-  github_token: 'ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789',
+  github_app_installation_access_token: 'ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789',
   
   // Stripe API Key
   stripe_api_key: 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
